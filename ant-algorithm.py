@@ -4,7 +4,7 @@
 
 import numpy as np
 import random
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 # ввод матрицы смежности графа
 a = list(map(int, input().split()))
@@ -27,7 +27,6 @@ for i in range(1, len(a)):
 # np.fill_diagonal(L, 0)
 # print(L)
 # =============================================================================
-
 
 # =============================================================================
 # L = np.array([[0, 48, 16, 11, 28, 42, 49, 1, 24, 40, 14, 43, 12, 32, 39, 6, 42, 11, 39, 9],
@@ -55,14 +54,14 @@ for i in range(1, len(a)):
 # объявление коэффициентов
 
 CITIES = len(L[0])
-AGES = 10 * CITIES
-ANTS = CITIES
+AGES = 50 * CITIES
+ANTS = 20
 
-a = 0.5 # коэффициент запаха
-b = 2   # коэффициент расстояния
-p = 0.8 # коэффициент высыхания
-Q = 100   # количество выпускаемого феромона
-e = 1   # количество элитных муравьев
+a = 0.7   # коэффициент запаха
+b = 1.5   # коэффициент расстояния
+rho = 0.45 # коэффициент высыхания
+Q = 120   # количество выпускаемого феромона
+e = 5     # количество элитных муравьев
 
 ph = Q/(CITIES) # начальное значение феромона
 
@@ -74,13 +73,14 @@ for i in range(CITIES):
             rev_L[i, j] = 1/L[i, j]
             
 # инициализация матрицы феромонов
-tao = np.ones((CITIES, CITIES)) * Q
+tao = np.ones((CITIES, CITIES)) * ph
 
 BEST_DIST = float("inf")                # лучшая длина маршрута
 BEST_ROUTE = None                       # лучший маршрут
 antROUTE = np.zeros((ANTS, CITIES))     # матрица маршрутов муравьев в одном поколении (номера узлов графа)
 antDIST = np.zeros(ANTS)                # вектор длины маршрута муравьев в одном поколении
 antBEST_DIST = np.zeros(AGES)           # вектор лучших длин маршрутов в каждом поколении
+antAVERAGE_DIST = np.zeros(AGES)
 
 # основной цикл алгоритма
 # ---------- начало освновного цикла ----------
@@ -96,11 +96,8 @@ for age in range(AGES):
 #         antROUTE[k, 0] = random.randint(0, CITIES-1)
 # =============================================================================
         
-        # начальное расположение муравья в графе (без повторений, либо случайное)
-        if ANTS >= CITIES:
-            antROUTE[k, 0] = k
-        else:
-            antROUTE[k, 0] = random.randint(0, CITIES-1)
+        # начальное расположение муравья в графе (равномерное)
+        antROUTE[k, 0] = k % CITIES
         
 # =============================================================================
 #         # начальное расположение муравья в графе (все с одного)
@@ -112,7 +109,7 @@ for age in range(AGES):
             from_city = int(antROUTE[k, s-1]) # текущее положение муравья
             P = (tao[from_city] ** a) * (rev_L[from_city] ** b)
             # вероятность посещения уже посещенных городов = 0
-            for i in range(s-1):
+            for i in range(s):
                 P[int(antROUTE[k, i])] = 0
               
             # вероятность выбора направления, сумма всех P = 1
@@ -127,15 +124,6 @@ for age in range(AGES):
                         antROUTE[k, s] = to # записываем город №s в вектор k-ого муравья
                         isNotChosen = False
                         break
-# =============================================================================
-#             # локальное обновление феромона
-#             for s in range(CITIES):
-#                 city_to = int(antROUTE[k, s])
-#                 city_from = int(antROUTE[k, s-1])
-# #               tao[city_from, city_to] = tao[city_from, city_to] + (Q / antDIST[k]) # ant-cycle AntSystem
-#                 tao[city_from, city_to] = tao[city_from, city_to] + t # Ant-density AS
-#                 tao[city_to, city_from] = tao[city_from, city_to]
-# =============================================================================
         # ---------- конец цила обхода графа ----------
         
         # вычисляем длину маршрута k-ого муравья
@@ -143,7 +131,7 @@ for age in range(AGES):
             city_from = int(antROUTE[k, i-1])
             city_to = int(antROUTE[k, i])
             antDIST[k] += L[city_from, city_to]
-        
+
         # сравниваем длину маршрута с лучшим показателем
         if antDIST[k] < BEST_DIST:
             BEST_DIST = antDIST[k]
@@ -152,38 +140,46 @@ for age in range(AGES):
     
     # ---------- обновление феромонов----------
     # высыхание по всем маршрутам (дугам графа)
-    tao *= 0.7 
+    tao *= (1-rho) 
     
     # цикл обновления феромона
     for k in range(ANTS):
         for s in range(CITIES):
             city_to = int(antROUTE[k, s])
             city_from = int(antROUTE[k, s-1])
-#            tao[city_from, city_to] = tao[city_from, city_to] + (Q / antDIST[k]) # ant-cycle AntSystem
-            tao[city_from, city_to] = tao[city_from, city_to] + Q # Ant-density AS
+            tao[city_from, city_to] = tao[city_from, city_to] + (Q / antDIST[k]) # ant-cycle AntSystem
+#            tao[city_from, city_to] = tao[city_from, city_to] + Q # Ant-density AS
             tao[city_to, city_from] = tao[city_from, city_to]
     
-# =============================================================================
-#     # проход элитных е-муравьев по лучшему маршруту
-#     for s in range(CITIES):
-#         city_to = int(BEST_ROUTE[s])
-#         city_from = int(BEST_ROUTE[s-1])
-#         tao[city_from, city_to] = tao[city_from, city_to] + (e * Q / BEST_DIST) # ant-cycle AntSystem
-#         tao[city_to, city_from] = tao[city_from, city_to]
-# =============================================================================
+    # проход элитных е-муравьев по лучшему маршруту
+    for s in range(CITIES):
+        city_to = int(BEST_ROUTE[s])
+        city_from = int(BEST_ROUTE[s-1])
+        tao[city_from, city_to] = tao[city_from, city_to] + (e * Q / BEST_DIST) # ant-cycle AntSystem
+        tao[city_to, city_from] = tao[city_from, city_to]
             
     # ---------- конец обновления феромона ----------
     
     # конец поколения муравьев
+    
+    # сбор информации для графиков
     antBEST_DIST[age] = BEST_DIST
+    antAVERAGE_DIST[age] = np.average(antDIST)
+    
 # ---------- конец основного цикла ----------
     
 # выдача веса лучшего маршрута на выход
 print(int(BEST_DIST))
+
+x = list(range(AGES))
+y = antBEST_DIST
+
+fig, ax = plt.subplots()
+plt.plot(x, y)
 # =============================================================================
-# x = list(range(AGES))
-# y = antBEST_DIST
-# plt.plot(x, y)
-# plt.grid(True)
-# plt.show()
+# for k in range(ANTS):
+#     plt.plot(x, antALL_DIST[k])
 # =============================================================================
+plt.plot(x, antAVERAGE_DIST)
+plt.grid(True)
+plt.show()
