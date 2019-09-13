@@ -59,11 +59,11 @@ ANTS = 20
 
 a = 0.7   # коэффициент запаха
 b = 1.5   # коэффициент расстояния
-rho = 0.45 # коэффициент высыхания
+rho = 0.45  # коэффициент высыхания
 Q = 120   # количество выпускаемого феромона
 e = 5     # количество элитных муравьев
 
-ph = Q/(CITIES) # начальное значение феромона
+ph = Q/(CITIES)  # начальное значение феромона
 
 # инициализация матрицы "краткости" дуг графа
 rev_L = np.zeros((CITIES, CITIES))
@@ -124,6 +124,15 @@ for age in range(AGES):
                         antROUTE[k, s] = to # записываем город №s в вектор k-ого муравья
                         isNotChosen = False
                         break
+# =============================================================================
+#             # локальное обновление феромона
+#             for s in range(CITIES):
+#                 city_to = int(antROUTE[k, s])
+#                 city_from = int(antROUTE[k, s-1])
+# #               tao[city_from, city_to] = tao[city_from, city_to] + (Q / antDIST[k]) # ant-cycle AntSystem
+#                 tao[city_from, city_to] = tao[city_from, city_to] + t # Ant-density AS
+#                 tao[city_to, city_from] = tao[city_from, city_to]
+# =============================================================================
         # ---------- конец цила обхода графа ----------
         
         # вычисляем длину маршрута k-ого муравья
